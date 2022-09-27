@@ -27,13 +27,13 @@ fn print(message: &str) {
                 print!("{}", repr);
             }
         }
-        println!("");
+        println!();
     }
-    println!("");
+    println!();
 }
 
 fn main() {
-    print!("{}{}", "\x1b[?25l", "\n".repeat(5));
+    print!("\x1b[?25l{}", "\n".repeat(5));
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(duration) => {
             let secs = duration.as_secs() % 60;
