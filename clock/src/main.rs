@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::Local;
 
 const FONT3X5: [u16; 12] = [
     0x0000, // space
@@ -33,15 +33,8 @@ fn print(message: &str) {
 }
 
 fn main() {
-    print!("\x1b[?25l{}", "\n".repeat(5));
-    match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-        Ok(duration) => {
-            let secs = duration.as_secs() % 60;
-            let mins = duration.as_secs() / 60 % 60;
-            let hours = duration.as_secs() / 3600 % 24;
-            print(&format!("{:02}:{:02}:{:02}", (hours + 3) % 24, mins, secs));
-        }
-        Err(_) => panic!("PANIC!"),
-    }
-    print!("\n\x1b[?25h");
+    print!("{}", "\n".repeat(5));
+    print!("\x1b[?25l");
+    print(&format!("{}", Local::now().format("%H:%M:%S")));
+    print!("\x1b[?25h");
 }
