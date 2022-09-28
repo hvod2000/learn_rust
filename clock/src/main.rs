@@ -1,5 +1,8 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{thread, time};
 use chrono::Local;
+use ctrlc;
 
 const FONT3X5: [u16; 12] = [
     0x0000, // space
@@ -34,11 +37,17 @@ fn print(message: &str) {
 }
 
 fn main() {
-    print!("{}", "\n".repeat(5));
-    loop {
-        print!("\x1b[?25l");
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    print!("\x1b[?25l{}", "\n".repeat(5));
+    while running.load(Ordering::SeqCst) {
         print(&format!("{}", Local::now().format("%H:%M:%S")));
-        print!("\x1b[?25h");
         thread::sleep(time::Duration::from_millis(500));
     }
+    println!("\x1b[?25h");
 }
