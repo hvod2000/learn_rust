@@ -1,3 +1,4 @@
+use std::{thread, time};
 use chrono::Local;
 
 const FONT3X5: [u16; 12] = [
@@ -34,7 +35,10 @@ fn print(message: &str) {
 
 fn main() {
     print!("{}", "\n".repeat(5));
-    print!("\x1b[?25l");
-    print(&format!("{}", Local::now().format("%H:%M:%S")));
-    print!("\x1b[?25h");
+    loop {
+        print!("\x1b[?25l");
+        print(&format!("{}", Local::now().format("%H:%M:%S")));
+        print!("\x1b[?25h");
+        thread::sleep(time::Duration::from_millis(500));
+    }
 }
