@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time};
 use chrono::Local;
+use chrono::Timelike;
 
 const FONT3X5: [u16; 12] = [
     0x0000, // space
@@ -45,8 +46,10 @@ fn main() {
 
     print!("\x1b[?25l{}", "\n".repeat(5));
     while running.load(Ordering::SeqCst) {
-        print(&format!("{}", Local::now().format("%H:%M:%S")));
-        thread::sleep(time::Duration::from_millis(500));
+        let current_time = Local::now();
+        print(&format!("{}", current_time.format("%H:%M:%S")));
+        let nanos_to_next_second = 1e9 as u32 - current_time.nanosecond();
+        thread::sleep(time::Duration::from_nanos(nanos_to_next_second as u64));
     }
     println!("\x1b[?25h");
 }
