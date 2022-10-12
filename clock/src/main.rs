@@ -1,8 +1,8 @@
+use chrono::Local;
+use chrono::Timelike;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time};
-use chrono::Local;
-use chrono::Timelike;
 
 const FONT3X5: [u16; 12] = [
     0x0000, // space
