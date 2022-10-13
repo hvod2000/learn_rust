@@ -1,8 +1,6 @@
-use chrono::Local;
-use chrono::Timelike;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::{thread, time};
+use chrono::{Local, Timelike};
+use std::sync::mpsc::channel;
+use std::time::Duration;
 
 const FONT3X5: [u16; 12] = [
     0x0000, // space
@@ -37,19 +35,20 @@ fn print(message: &str) {
 }
 
 fn main() {
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
+    let (send, recv) = channel();
     ctrlc::set_handler(move || {
-        r.store(false, Ordering::SeqCst);
+        send.send(()).unwrap();
     })
     .expect("Error setting Ctrl-C handler");
 
     print!("\x1b[?25l{}", "\n".repeat(5));
-    while running.load(Ordering::SeqCst) {
+    loop {
         let current_time = Local::now();
         print(&format!("{}", current_time.format("%H:%M:%S")));
-        let nanos_to_next_second = 1e9 as u32 - current_time.nanosecond();
-        thread::sleep(time::Duration::from_nanos(nanos_to_next_second as u64));
+        let to_next_second = Duration::from_nanos(1e9 as u64 - current_time.nanosecond() as u64);
+        if recv.recv_timeout(to_next_second).is_ok() {
+            break;
+        }
     }
     println!("\x1b[?25h");
 }
