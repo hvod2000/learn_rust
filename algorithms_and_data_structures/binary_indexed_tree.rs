@@ -14,8 +14,8 @@
 // usage:
 //   1. Put in every node its prefix on subtree.
 //   This way you get O(log(n)) querying of sum on range.
-//   2. The same as (1), but values are prefix sums.
-//   You get O(log(n)) querying of sum on range and
+//   2. The same as (1), but values are element differences.
+//   You get O(log(n)) querying of value and
 //   O(log(n)) adding value on range.
 //
 // binary indexed tree with indexation starting from 0
