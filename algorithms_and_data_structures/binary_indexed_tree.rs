@@ -29,11 +29,14 @@
 //     msb(k) = 1 << k.trailing_zeros()
 //   you should use
 //     msz(k) = 1 << k.trailing_ones()
+//
+// imho indexation from 1 is slightly simpler both to understand
+// and implement, but in general both of them are quite simple.
 
 fn binary_indexed_tree(elements: Vec<i64>) -> Vec<i64> {
-    let mut tree = vec![0; elements.len() + 1];
-    for (mut value, i) in elements.into_iter().zip(1usize..) {
-        let mut j = (1 << i.trailing_zeros()) / 2;
+    let mut tree = vec![0; elements.len()];
+    for (i, mut value) in elements.into_iter().enumerate() {
+        let mut j = (1 << i.trailing_ones()) / 2;
         while j > 0 {
             value += tree[i - j];
             j /= 2;
@@ -43,23 +46,23 @@ fn binary_indexed_tree(elements: Vec<i64>) -> Vec<i64> {
     tree
 }
 
-fn add(tree: &mut [i64], i: usize, delta: i64) {
-    let mut i = i + 1;
+fn add(tree: &mut [i64], mut i: usize, delta: i64) {
     while i < tree.len() {
         tree[i] += delta;
-        i += 1 << i.trailing_zeros();
+        i += 1 << i.trailing_ones();
     }
 }
 
-fn nth(tree: &[i64], mut i: usize) -> i64 {
-    let (mut j, mut result) = (i + 1, 0);
+fn nth(tree: &[i64], i: usize) -> i64 {
+    let (mut i, mut j) = (i as isize - 1, i as isize);
+    let mut result = 0;
     while i < j {
-        result += tree[j];
-        j -= 1 << j.trailing_zeros();
+        result += tree[j as usize];
+        j -= 1 << j.trailing_ones();
     }
     while i > j {
-        result -= tree[i];
-        i -= 1 << i.trailing_zeros();
+        result -= tree[i as usize];
+        i -= 1 << i.trailing_ones();
     }
     result
 }
@@ -67,14 +70,21 @@ fn nth(tree: &[i64], mut i: usize) -> i64 {
 #[test]
 fn test_representation() {
     let tree = binary_indexed_tree(vec![3, 1, 4, 1, 5, 9, 2, 6]);
-    assert_eq!(tree, [0, 3, 4, 4, 9, 5, 14, 2, 31]);
+    assert_eq!(tree, [3, 4, 4, 9, 5, 14, 2, 31]);
+}
+
+#[test]
+fn test_restoring_elements() {
+    let tree = binary_indexed_tree(vec![3, 1, 4, 1, 5, 9, 2, 6]);
+    let vals = (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>();
+    assert_eq!(vals, [3, 1, 4, 1, 5, 9, 2, 6]);
 }
 
 #[test]
 fn test_addition() {
     let mut tree = binary_indexed_tree(vec![3, 1, 4, 1, 5, 9, 2, 6]);
     add(&mut tree, 4, -50);
-    let vals = (1..tree.len()).map(|i| nth(&tree, i - 1)).collect::<Vec<_>>();
+    let vals = (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>();
     assert_eq!(vals, [3, 1, 4, 1, -45, 9, 2, 6]);
 }
 
@@ -85,9 +95,9 @@ fn main() {
     let arr = input.next().unwrap().split(' ').map(|w| w.parse().unwrap()).collect();
     let mut tree = binary_indexed_tree(arr);
     println!("tree = {:?}", tree);
-    println!("vals = {:?}", (1..tree.len()).map(|i| nth(&tree, i - 1)).collect::<Vec<_>>());
+    println!("vals = {:?}", (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>());
     println!("Decrementing second element by 42");
     add(&mut tree, 1, -42);
     println!("tree = {:?}", tree);
-    println!("vals = {:?}", (1..tree.len()).map(|i| nth(&tree, i - 1)).collect::<Vec<_>>());
+    println!("vals = {:?}", (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>());
 }
