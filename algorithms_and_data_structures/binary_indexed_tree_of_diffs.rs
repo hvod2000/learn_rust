@@ -60,7 +60,7 @@ fn add_range(tree: &mut [i64], start: usize, end: usize, delta: i64) {
         tree[i] += delta;
         i += 1 << i.trailing_ones();
     }
-    while j < i {
+    while j < i && j < tree.len() {
         tree[j] -= delta;
         j += 1 << j.trailing_ones();
     }
@@ -100,6 +100,14 @@ fn test_addition_on_range() {
     add_range(&mut tree, 4, 6, -50);
     let vals = (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>();
     assert_eq!(vals, [3, 1, 4, 1, -45, -41, -48, 6]);
+}
+
+#[test]
+fn test_addition_on_hacky_range() {
+    let mut tree = binary_indexed_tree(vec![3, 1, 4, 1, 5, 9]);
+    add_range(&mut tree, 4, 5, -50);
+    let vals = (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>();
+    assert_eq!(vals, [3, 1, 4, 1, -45, -41]);
 }
 
 fn main() {
