@@ -33,36 +33,41 @@
 // imho indexation from 1 is slightly simpler both to understand
 // and implement, but in general both of them are quite simple.
 
-fn binary_indexed_tree(elements: Vec<i64>) -> Vec<i64> {
-	let mut tree = vec![0; elements.len()];
-	for (i, mut value) in elements.into_iter().enumerate() {
-		let mut j = (1 << i.trailing_ones()) / 2;
-		while j > 0 {
-			value += tree[i - j];
-			j /= 2;
-		}
-		tree[i] = value;
-	}
+fn msz(i: usize) -> usize { 1 << i.trailing_ones() }
+
+fn binary_indexed_tree(mut tree: Vec<i64>) -> Vec<i64> {
+	let n = tree.len();
+	(0..tree.len()).filter(|i| i + msz(*i) < n).for_each(|i| tree[i + msz(i)] += tree[i]);
 	tree
 }
 
 fn add(tree: &mut [i64], mut i: usize, delta: i64) {
 	while i < tree.len() {
 		tree[i] += delta;
-		i += 1 << i.trailing_ones();
+		i += msz(i);
 	}
 }
 
-fn nth(tree: &[i64], i: usize) -> i64 {
-	let (mut i, mut j) = (i as isize - 1, i as isize);
+fn sum(tree: &[i64], first: usize, last: usize) -> i64 {
+	let (mut i, mut j) = (first as isize - 1, last as isize);
 	let mut result = 0;
 	while i < j {
 		result += tree[j as usize];
-		j -= 1 << j.trailing_ones();
+		j -= msz(j as usize) as isize;
 	}
 	while i > j {
 		result -= tree[i as usize];
-		i -= 1 << i.trailing_ones();
+		i -= msz(i as usize) as isize;
+	}
+	result
+}
+
+fn nth(tree: &[i64], i: usize) -> i64 {
+	let mut result = tree[i];
+	let (mut i, j) = (i as isize - 1, i as isize - msz(i) as isize);
+	while i > j {
+		result -= tree[i as usize];
+		i -= msz(i as usize) as isize;
 	}
 	result
 }
@@ -88,10 +93,16 @@ fn test_addition() {
 	assert_eq!(vals, [3, 1, 4, 1, -45, 9, 2, 6]);
 }
 
+#[test]
+fn test_summation() {
+	let tree = binary_indexed_tree(vec![3, 1, 4, 1, 5, 9, 2, 6]);
+	assert_eq!(sum(&tree, 4, 6), 16);
+	assert_eq!(sum(&tree, 0, 3), 9);
+}
+
 fn main() {
-	use std::io;
 	use std::io::*;
-	let mut input = io::stdin().lock().lines().map(|l| l.unwrap());
+	let mut input = stdin().lock().lines().map(|l| l.unwrap());
 	let arr = input.next().unwrap().split(' ').map(|w| w.parse().unwrap()).collect();
 	let mut tree = binary_indexed_tree(arr);
 	println!("tree = {:?}", tree);
@@ -100,4 +111,5 @@ fn main() {
 	add(&mut tree, 1, -42);
 	println!("tree = {:?}", tree);
 	println!("vals = {:?}", (0..tree.len()).map(|i| nth(&tree, i)).collect::<Vec<_>>());
+	println!("sums = {:?}", (0..tree.len()).map(|i| sum(&tree, 0, i)).collect::<Vec<_>>());
 }
