@@ -43,22 +43,20 @@ fn set_nth(tree: &mut Vec<i64>, i: usize, value: i64) {
 	}
 }
 
-fn nth(tree: &Vec<i64>, i: usize) -> i64 {
-	tree[tree.len() / 2 + i]
-}
+fn nth(tree: &Vec<i64>, i: usize) -> i64 { tree[tree.len() / 2 + i] }
 
 fn sum(tree: &Vec<i64>, first: usize, last: usize) -> i64 {
-	fn sum(tree: &Vec<i64>, first: usize, last: usize, i: usize, left: usize, right: usize) -> i64 {
-		if first > right || last < left {
+	fn f(tree: &Vec<i64>, i: usize, l: usize, r: usize, first: usize, last: usize) -> i64 {
+		if first > r || last < l {
 			0
-		} else if first <= left && right <= last {
+		} else if first <= l && r <= last {
 			tree[i]
 		} else {
-			sum(tree, first, last, i * 2 + 1, left, (left + right) / 2)
-				+ sum(tree, first, last, i * 2 + 2, (left + right) / 2 + 1, right)
+			f(tree, i * 2 + 1, l, (l + r) / 2, first, last)
+				+ f(tree, i * 2 + 2, (l + r) / 2 + 1, r, first, last)
 		}
 	}
-	sum(tree, first, last, 0, 0, tree.len() / 2)
+	f(tree, 0, 0, tree.len() / 2, first, last)
 }
 
 #[test]
