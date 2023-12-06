@@ -83,6 +83,24 @@ impl fmt::Display for Char {
 	}
 }
 
+fn compression_per_row(font: Font) -> usize {
+	let mut rows = vec![];
+	for _ in 0..16 {
+		rows.push(vec![]);
+	}
+	for chr in font.chars {
+		for row in 0..16 {
+			let row_bits = ((chr.bits >> row * 8) & 255) as u8;
+			if !rows[row].contains(&row_bits) {
+				rows[row].push(row_bits);
+			}
+		}
+	}
+	let header = rows.iter().map(|x| x.len()).sum::<usize>() + rows.len();
+	let char_size = (rows.iter().map(|x| x.len()).product::<usize>() as f64).log2().ceil() as usize;
+	header + (char_size + 7) / 8 * font.chars.len()
+}
+
 fn main() {
 	let cli = Cli::parse();
 	match &cli.command {
@@ -90,13 +108,18 @@ fn main() {
 			todo!("Converting from {source:?} to {target:?}");
 		}
 		Commands::Benchmark {} => {
-			let font = Font::from_png(include_bytes!("font.png") as &[u8]);
+			let font_png = include_bytes!("font.png");
+			let font = Font::from_png(font_png as &[u8]);
 			for i in 0..94 {
 				let char = char::from_u32(i + 33).unwrap();
 				let char_art = font.chars[i as usize];
 				println!("char[{i}] = {char}\n{char_art}");
 			}
-			todo!("Benchmark");
+			let mut compression_options = vec![("PNG", font_png.len())];
+			compression_options.push(("per row", compression_per_row(font)));
+			for (name, bytes) in compression_options {
+				println!("{bytes}\t{name}");
+			}
 		}
 	}
 }
