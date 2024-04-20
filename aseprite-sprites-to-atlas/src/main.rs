@@ -1,6 +1,6 @@
-#![allow(dead_code, unused_variables, unused_imports, unused_mut)]
+// #![allow(dead_code, unused_variables, unused_imports, unused_mut)]
 use aseprite_reader2::Aseprite;
-use image::{self, ImageBuffer, Rgba};
+use image::{ImageBuffer, Rgba};
 use std::{fs, path::Path, process};
 
 struct Sprite {
