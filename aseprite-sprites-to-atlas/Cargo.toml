@@ -1,0 +1,12 @@
+[package]
+name = "aseprite-sprites-to-atlas"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aseprite-reader2 = "0.1.0"
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[profile.release]
+lto = true
+strip = true
