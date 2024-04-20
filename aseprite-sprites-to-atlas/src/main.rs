@@ -55,7 +55,7 @@ fn pack_sprites(mut sprites: Vec<Sprite>) -> (usize, usize, Vec<[u8; 4]>) {
 		println!("\tw: {},", sprite.width);
 		println!("\th: {},", sprite.height);
 		for (name, frames) in sprite.animations {
-			println!("\t{} = {{", name);
+			println!("\t{}: [", name);
 			for (frame_id, delay) in frames {
 				let delay_in_jiffy = (delay as f64 / 1000. * 240.).round() as i32;
 				if delay_in_jiffy == 0 {
@@ -80,7 +80,7 @@ fn pack_sprites(mut sprites: Vec<Sprite>) -> (usize, usize, Vec<[u8; 4]>) {
 				// eprintln!("\t\t{}", "─".repeat(80 - 4 * 2));
 				free_space += 1;
 			}
-			println!("\t}},");
+			println!("\t],");
 		}
 		println!("}},");
 	}
