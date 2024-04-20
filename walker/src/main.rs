@@ -1,6 +1,7 @@
 use std::f64::consts::TAU;
 use tetra::graphics::{self, Color, Texture};
 use tetra::input::{self, Key};
+use tetra::math::num_traits::Pow;
 use tetra::math::Vec2;
 use tetra::{Context, ContextBuilder, State};
 
@@ -29,22 +30,24 @@ fn hyperbolical_on_y_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
 	return (dx * dx + (y2 - y1).powi(2)).sqrt();
 }
 
-fn hyperbolical_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-	let x2 = (x2 - x1) * ((x2.powi(2) + y2.powi(2)).sqrt() / WORLD_SIZE * 10.0).cosh();
-	let y2 = (y2 - y1) * ((x2.powi(2) + y2.powi(2)).sqrt() / WORLD_SIZE * 10.0).cosh();
-	return euclidian_distance(0.0, 0.0, x2, y2);
-}
-
 // fn hyperbolical_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-// 	let infinity = WORLD_SIZE as f64 * 2.0;
-// 	let x1 = x1 as f64 / infinity;
-// 	let x2 = x2 as f64 / infinity;
-// 	let y1 = y1 as f64 / infinity;
-// 	let y2 = y2 as f64 / infinity;
-// 	let dist = (y1.cosh() * (x2 - x1).cosh() * y2.cosh() - y1.sinh() * y2.sinh()).acosh();
-// 	println!("{} {} {} {} -> {}", x1, x2, y1, y2, dist);
-// 	return (dist * infinity) as f64;
+// 	let x2 = (x2 - x1) * ((x2.powi(2) + y2.powi(2)).sqrt() / WORLD_SIZE * 10.0).cosh();
+// 	let y2 = (y2 - y1) * ((x2.powi(2) + y2.powi(2)).sqrt() / WORLD_SIZE * 10.0).cosh();
+// 	return euclidian_distance(0.0, 0.0, x2, y2);
 // }
+
+fn hyperbolical_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
+	let infinity = WORLD_SIZE as f64 * 2.0 / 20.0;
+	let x1 = x1 as f64 / infinity;
+	let y1 = y1 as f64 / infinity;
+	let z1 = (1.0 + x1.powi(2) + y1.powi(2)).sqrt();
+	let x2 = x2 as f64 / infinity;
+	let y2 = y2 as f64 / infinity;
+	let z2 = (1.0 + x2.powi(2) + y2.powi(2)).sqrt();
+	let product: f64 = z1 * z2 - x1 * x2 - y1 * y2;
+	// println!("{} -> {}", product, product.max(1.0).acosh());
+	return product.max(1.0).acosh() * infinity;
+}
 
 fn spherical_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
 	const R: f64 = SPHERE_RADIUS;
@@ -112,7 +115,7 @@ impl State for GameState {
 		if input::is_key_pressed(ctx, Key::Space) {
 			self.objects.push(Entity::new(self.texture.clone(), Vec2::new(x, y)));
 		}
-		// println!("{},{}", x, y);
+		// println!("plyer: {},{}", x, y);
 		self.player.position.x = x;
 		self.player.position.y = y;
 		Ok(())
@@ -132,15 +135,15 @@ impl State for GameState {
 			// let dx = d(x0, y0, x, y0).copysign(d(x0, y0, x, y0) - d(x0 + 0.01, y0, x, y0));
 			// let dy = d(x, y0, x, y).copysign(d(x, y0, x, y) - d(x, y0 + 0.01, x, y));
 
-			let dy = d(x0, y0, x0, y).copysign(d(x0, y0, x0, y) - d(x0, y0 + 0.01, x0, y));
-			let dx = d(x0, y, x, y).copysign(d(x0, y, x, y) - d(x0 + 0.01, y, x, y));
+			// let dy = d(x0, y0, x0, y).copysign(d(x0, y0, x0, y) - d(x0, y0 + 0.01, x0, y));
+			// let dx = d(x0, y, x, y).copysign(d(x0, y, x, y) - d(x0 + 0.01, y, x, y));
 
-			// let (x2, y2) = (x, y);
-			// let (x1, y1) = ((x2 + x0) / 2.0, (y2 + y0) / 2.0);
-			// let dy = d(x0, y0, x0, y1).copysign(d(x0, y0, x0, y1) - d(x0, y0 + 0.01, x0, y1));
-			// let dx = d(x0, y1, x1, y1).copysign(d(x0, y1, x1, y1) - d(x0 + 0.01, y1, x1, y1));
-			// let dy = dy + d(x1, y1, x1, y2).copysign(d(x1, y1, x1, y2) - d(x1, y1 + 0.01, x1, y2));
-			// let dx = dx + d(x1, y2, x2, y2).copysign(d(x1, y2, x2, y2) - d(x1 + 0.01, y2, x2, y2));
+			let (x2, y2) = (x, y);
+			let (x1, y1) = ((x2 + x0) / 2.0, (y2 + y0) / 2.0);
+			let dy = d(x0, y0, x0, y1).copysign(d(x0, y0, x0, y1) - d(x0, y0 + 0.01, x0, y1));
+			let dx = d(x0, y1, x1, y1).copysign(d(x0, y1, x1, y1) - d(x0 + 0.01, y1, x1, y1));
+			let dy = dy + d(x1, y1, x1, y2).copysign(d(x1, y1, x1, y2) - d(x1, y1 + 0.01, x1, y2));
+			let dx = dx + d(x1, y2, x2, y2).copysign(d(x1, y2, x2, y2) - d(x1 + 0.01, y2, x2, y2));
 
 			// let distance = d(x0, y0, x, y);
 			// let ε = 1e-6;
@@ -149,6 +152,8 @@ impl State for GameState {
 			// let angle = dfdy.atan2(dfdx);
 			// let dx = angle.cos() * distance;
 			// let dy = angle.sin() * distance;
+
+			// println!("{} : {} {}", distance, x0, y0);
 
 			let pos = Vec2::new((w / 2.0 + SCALE * dx) as f32, (h / 2.0 - SCALE * dy) as f32);
 			obj.texture.draw(ctx, pos);
