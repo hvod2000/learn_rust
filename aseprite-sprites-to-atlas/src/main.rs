@@ -31,6 +31,7 @@ fn main() {
 		*pixel = Rgba(atlas_pixels[x + y * w]);
 	}
 	atlas.save(&args[2]).unwrap();
+	compess_png(&args[2]);
 }
 
 fn pack_sprites(mut sprites: Vec<Sprite>) -> (usize, usize, Vec<[u8; 4]>) {
@@ -132,4 +133,14 @@ fn load_sprites(paths: &[String]) -> Vec<Sprite> {
 		sprites.push(sprite);
 	}
 	sprites
+}
+
+fn compess_png(path: &String) {
+	use oxipng::{InFile, Options, OutFile};
+	let mut options = Options::from_preset(255);
+	options.strip = oxipng::StripChunks::All;
+	options.optimize_alpha = true;
+	let input = InFile::from(path);
+	let output = OutFile::from_path(path.into());
+	_ = oxipng::optimize(&input, &output, &options);
 }

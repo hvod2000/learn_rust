@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 aseprite-reader2 = "0.1.0"
 image = { version = "0.25", default-features = false, features = ["png"] }
+oxipng = { version = "9.0", features = ["parallel", "zopfli", "filetime"], default-features = false }
 
 [profile.release]
 lto = true
