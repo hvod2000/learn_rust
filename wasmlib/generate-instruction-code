@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""
+Generate rust code for Instr enum.
+
+Usage: {script} [options]
+
+Options:
+   -h, --help   Show this screen and exit.
+   --verbose    Raise verbosity level.
+"""
+import sys
+from pathlib import Path
+from typing import Any, Callable
+from csv import reader
+
+INSTRUCTIONS_PATH = Path(__file__).resolve().parent / "instructions.tsv"
+INSTRUCTIONS = list(reader(INSTRUCTIONS_PATH.read_text().splitlines(), delimiter="\t"))
+debug: Callable[..., None]
+noop: Any = lambda *args, **kwargs: None
+
+
+def main(script_name: str, *script_args: str):
+    global debug
+    doc = __doc__.format(script=Path(script_name).name)
+    args = __import__("docopt").docopt(doc, script_args)
+    debug = print if args["--verbose"] else noop
+    debug(f"Running with arguments {dict(args)!r}")
+    print("\n".join(list(generate_implementation())[:]))
+
+
+def generate_definition():
+    yield "#[derive(Clone)]"
+    yield "pub enum Instr {"
+    for _, instr, _ in INSTRUCTIONS:
+        instr, *fields = instr.split()
+        name = rustify_name(instr)
+        fields = list(map(rustify_type, fields))
+        yield f"\t{name}" + (f"({', '.join(fields)})," if fields else ",")
+    yield "}"
+
+
+def generate_implementation():
+    yield "impl Instr {"
+    yield from tabbed(generate_reading())
+    yield ""
+    yield from tabbed(generate_block_reading())
+    yield "}"
+
+
+def generate_reading():
+    readers = {}
+    for opcode, instr, _ in INSTRUCTIONS:
+        opcode = opcode.split()
+        reader = generate_reader_for(instr)
+        match opcode:
+            case [byte]:
+                readers[byte] = reader
+            case [byte1, byte2]:
+                readers.setdefault(byte1, {})[byte2] = reader
+    yield "pub fn read_from<R: std::io::Read>(reader: &mut R) -> Result<Self> {"
+    yield '\tlet err = |x: u8| Err(Error::other(format!("Unsupported opcode: {}", x)));'
+    yield "\tuse Instr::*;"
+    yield "\tOk(match reader.u8()? {"
+    for opcode, reader in readers.items():
+        if isinstance(reader, str):
+            yield from tabbed(tabbed(f"{opcode} => {reader}".splitlines()))
+        else:
+            yield "\t\t" + opcode + " => match reader.u8()? {"
+            for opcode, reader in reader.items():
+                case = f"{opcode} => {reader}"
+                yield from tabbed(tabbed(tabbed(case.splitlines())))
+            yield "\t\t\tunknown_opcode => return err(unknown_opcode),"
+            yield "\t\t},"
+    yield "\t\tunknown_opcode => return err(unknown_opcode),"
+    yield "\t})"
+    yield "}"
+
+
+def generate_block_reading():
+    yield "pub fn read_block_from<R: std::io::Read>(reader: &mut R) -> Result<(Vec<Self>, bool)> {"
+    yield "\tlet mut instructions = vec![];"
+    yield "\tloop {"
+    yield "\t\tmatch Instr::read_from(reader)? {"
+    yield "\t\t\tInstr::then_end => return Ok((instructions, true)),"
+    yield "\t\t\tInstr::end => return Ok((instructions, false)),"
+    yield "\t\t\tinstr => instructions.push(instr),"
+    yield "\t\t}"
+    yield "\t}"
+    yield "}"
+
+
+def generate_reader_for(instr: str) -> str:
+    instr, *fields = instr.split()
+    if instr == "if":
+        return (
+            "{\n"
+            "\tlet typ = DataType::from(reader.u8()?);\n"
+            "\tlet blck = Instr::read_block_from(reader)?;\n"
+            "\tlet otherwise = if blck.1 { vec![] } else { Instr::read_block_from(reader)?.0 };\n"
+            "\tif_else(typ, blck.0, otherwise)\n"
+            "}"
+        )
+
+    if instr == "br_table":
+        return (
+            "{\n"
+            "\tlet size = reader.u32()? as usize;\n"
+            "\tlet mut labels = vec![0usize; size + 1];\n"
+            "\tfor i in 0..=size {\n"
+            "\t\tlabels[i] = reader.u32()? as usize;\n"
+            "\t}\n"
+            "\tbr_table(labels)\n"
+            "}"
+        )
+    name = rustify_name(instr)
+    if fields:
+        return f"{name}({', '.join(map(generate_field_reader, fields))}),"
+    return f"{name},"
+
+
+def generate_field_reader(field: str) -> str:
+    if field.endswith("idx"):
+        return "reader.u32()? as usize"
+    if field in "u32 u64 i32 i64 f32 f64":
+        return f"reader.{field}()?"
+    if field == "blocktype":
+        return "DataType::from(reader.u8()?)"
+    if field == "[instr]":
+        return "Instr::read_block_from(reader)?.0"
+    return "todo!()"
+
+
+def rustify_type(typ: str) -> str:
+    types = {
+        **{x: x for x in "i32 u32 f32 u64 i64 f64".split()},
+        "blocktype": "Option<DataType>",
+        "instr": "Instr",
+    }
+    if typ[0] == "[" and typ[-1] == "]":
+        return "Vec<" + rustify_type(typ[1:-1]) + ">"
+    if typ.endswith("idx"):
+        return "usize"
+    return types[typ]
+
+
+def rustify_name(name: str) -> str:
+    exceptions = {"loop": "looped", "if": "if_else", "return": "return_result"}
+    return exceptions[name] if name in exceptions else snakecase(name)
+
+
+def camelcase(name: str) -> str:
+    words = name.replace("_", " ").replace(".", " ").split()
+    return "".join(word.capitalize() for word in words)
+
+
+def snakecase(name: str) -> str:
+    words = name.replace("_", " ").replace(".", " ").split()
+    return "_".join(word.lower() for word in words)
+
+
+def tabbed(lines):
+    for line in lines:
+        yield "\t" + line
+
+
+if __name__ == "__main__":
+    main(*sys.argv)
