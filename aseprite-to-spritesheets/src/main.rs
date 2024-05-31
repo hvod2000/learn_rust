@@ -43,7 +43,7 @@ fn export(source_dir: &Path, ase_path: &Path) -> Result<()> {
 	let ase = Aseprite::load(ase_path)?;
 	let tags = ase.tags.to_vec();
 	let frames = ase.frames.to_vec();
-	if tags.len() > 0 || frames.len() > 0 {
+	if tags.len() > 0 || frames.len() > 1 {
 		let tags = if tags.len() > 0 { tags } else { vec![Tag::idle(frames.len())] };
 		println!("\tAnimation with {} tags and {} frames", tags.len(), frames.len());
 	} else {
