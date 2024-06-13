@@ -1,4 +1,5 @@
 use std::io::{Error, Result};
+// TODO: Checkout https://crates.io/crates/aseprite-loader
 
 pub struct Aseprite {
 	pub width: usize,
