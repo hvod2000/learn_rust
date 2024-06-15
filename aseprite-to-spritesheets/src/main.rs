@@ -54,11 +54,15 @@ fn export(source_dir: &Path, target_dir: &Path, ase_path: &Path) -> Result<()> {
 		let anim_path = target_dir.join("animations").join(path).with_extension("tres");
 		println!(" -> {}", anim_path.to_string_lossy());
 		let mut anim = String::new();
+		// TODO: I need better language for text creation
 		anim.push_str(&format!(
 			"[gd_resource type=\"SpriteFrames\" load_steps={} format=3]\n\n",
 			frames.len() + 2
 		));
-		anim.push_str(&format!("[ext_resource type=\"Texture2D\" path=\"res://assets/sprites/{}\" id=\"1_wsu57\"]\n\n", &path.with_extension("png").to_string_lossy()));
+		anim.push_str(&format!(
+			"[ext_resource type=\"Texture2D\" path=\"res://assets/sprites/{}\" id=\"1_wsu57\"]\n\n",
+			&path.with_extension("png").to_string_lossy()
+		));
 		for (i, [x, y, w, h]) in locations.into_iter().enumerate() {
 			anim.push_str(&format!("[sub_resource type=\"AtlasTexture\" id=\"AtlasTexture_{:05}\"]\natlas = ExtResource(\"1_wsu57\")\n", i + 1));
 			anim.push_str(&format!("region = Rect2({}, {}, {}, {})\n\n", x, y, w, h));
