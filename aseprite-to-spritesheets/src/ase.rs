@@ -22,7 +22,7 @@ impl Aseprite {
 		let Ok(file) = aseprite_reader2::Aseprite::from_path(path) else {
 			return Err(Error::other("Failed to read aseprite file"));
 		};
-		let tags = file
+		let mut tags: Vec<Tag> = file
 			.tags()
 			.all()
 			.map(|tag| Tag {
@@ -31,6 +31,7 @@ impl Aseprite {
 				end: tag.frames.end as usize,
 			})
 			.collect();
+		tags.sort_by_key(|tag| tag.name.to_lowercase());
 		let frames_count = file.frames().count();
 		let frames = file.frames().get_for(&(0..(frames_count as u16))).get_images().unwrap();
 		let width = frames[0].width() as usize;
