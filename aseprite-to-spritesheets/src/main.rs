@@ -55,9 +55,10 @@ fn export(source_dir: &Path, target_dir: &Path, ase_path: &Path) -> Result<()> {
 		println!(" -> {}", anim_path.to_string_lossy());
 		let mut anim = String::new();
 		// TODO: I need better language for text creation
+		let uid = uid_to_str(hash_str(&path.to_string_lossy()));
 		anim.push_str(&format!(
-			"[gd_resource type=\"SpriteFrames\" load_steps={} format=3]\n\n",
-			frames.len() + 2
+			"[gd_resource type=\"SpriteFrames\" load_steps={} format=3 uid=\"{}\"]\n\n",
+			frames.len() + 2, uid
 		));
 		anim.push_str(&format!(
 			"[ext_resource type=\"Texture2D\" path=\"res://assets/sprites/{}\" id=\"1_wsu57\"]\n\n",
@@ -83,7 +84,7 @@ fn export(source_dir: &Path, target_dir: &Path, ase_path: &Path) -> Result<()> {
 			anim.push_str("],\n"); // TODO: take this info from aseprite file
 			anim.push_str("\"loop\": true,\n"); // TODO: take this info from aseprite file
 			anim.push_str(&format!("\"name\": &\"{}\",\n", name.to_lowercase())); // TODO: snake case?
-			anim.push_str("\"speed\": 10,\n");
+			anim.push_str("\"speed\": 10.0\n");
 			anim.push_str("}, ");
 		}
 		anim.push_str("]\n");
@@ -210,4 +211,28 @@ fn hash(image: &Vec<Vec<[u8; 4]>>) -> u64 {
 		}
 	}
 	hash.0
+}
+
+fn hash_str(string: &str) -> u64 {
+	let mut hash = Wrapping(0u64);
+	let factor = Wrapping(0x73A1D61C9611403B);
+	for ch in string.chars() {
+		hash = hash * factor + Wrapping(ch as u64);
+	}
+	hash.0
+}
+
+fn uid_to_str(id: u64) -> String {
+	let mut digits = String::new();
+	let mut id = i64::MAX as u64 & id;
+	while id > 0 {
+		let char = b"abcdefghijklmnopqrstuvwxy012345678"[(id % 34) as usize];
+		digits.push(char as char);
+		id /= 34;
+	}
+	let mut string = String::from("uid://");
+	for ch in digits.chars().rev() {
+		string.push(ch);
+	}
+	string
 }
